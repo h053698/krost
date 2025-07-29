@@ -1,0 +1,2 @@
+# krost
+Anonymous blog service
