@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Article - Krost</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/article.css') }}">
+</head>
+<body>
+  <main>
+    <div class="article-container">
+
+
+      <a href="#" class="edit-button" id="editButton">EDIT</a>
+      <br>
+
+      <article>
+        <header class="article-header">
+          <h1 class="article-title" id="articleTitle">Loading...</h1>
+          <div class="article-meta">
+            <span class="author-name" id="authorName">Anonymous</span>
+            <span class="publish-date" id="publishDate">Just now</span>
+          </div>
+          <div class="updated-info" id="updatedInfo">
+            Edited <span id="updatedDate"></span>
+          </div>
+        </header>
+
+        <div class="article-content" id="articleContent">
+          Loading article content...
+        </div>
+
+
+      </article>
+
+      <div class="article-footer">
+        <p>This is an anonymous post on Krost</p>
+        <div style="margin-top: 8px;">
+          <a href="#" class="report-link" id="reportLink">Report this article</a>
+        </div>
+        <div style="margin-top: 12px;">
+          <a href="/" class="write-new-button">Write a New Post</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+
+
+    <script src="{{ url_for('static', filename='js/article.js') }}"></script>
+</body>
+</html> 

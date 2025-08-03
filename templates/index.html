@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Write a Post</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+  <main>
+      <div class="editor">
+          <button class="publish-button interactable-button" id="publishBtn">PUBLISH</button>
+          <p class="info-text">Krost, Anonymous blog service</p>
+          <br>
+
+          <div id="loginSection">
+              <p class="login-recommend-text" id="signInBtn">🔐 Sign In with Passkey</p>
+              <div class="login-form" id="loginForm">
+                  <div class="username-container">
+                      <input type="text" class="username-input" id="usernameInput" placeholder="Enter username" />
+                      <span class="send-button" id="sendBtn">↵</span>
+                  </div>
+                  <div class="error-message" id="errorMessage"></div>
+              </div>
+          </div>
+
+          <div class="user-info" id="userInfo" style="display: none;">
+              <span id="welcomeMessage"></span>
+              <button class="logout-button" id="logoutBtn">Logout</button>
+          </div>
+
+          <input type="text" class="title-input" placeholder="Title" autocomplete="off" />
+          <input type="text" class="name-input" placeholder="Your name" autocomplete="off" />
+          <textarea class="content-input" placeholder="Your story..."></textarea>
+      </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/post.js') }}"></script>
+</body>
+</html>

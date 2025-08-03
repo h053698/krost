@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Federated Credential Test</title>
+  </head>
+  <body>
+    <button id="make-credential">Make Federated Credential</button>
+
+    <script>
+      const credInit = {
+        id: "1234",
+        name: "Serpentina",
+        protocol: "openidconnect", // or "federated"
+        provider: "https://provider.example.org",
+      };
+
+      const makeCredential = document.querySelector("#make-credential");
+
+      makeCredential.addEventListener("click", async () => {
+        try {
+          const cred = await navigator.credentials.create({
+            federated: credInit,
+          });
+
+          console.log("✅ Federated Credential created:");
+          console.log("name:", cred.name);
+          console.log("provider:", cred.provider);
+        } catch (e) {
+          console.error("❌ Failed to create FederatedCredential:", e);
+        }
+      });
+    </script>
+  </body>
+</html>

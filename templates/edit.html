@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Edit Post - Krost</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/edit.css') }}">
+</head>
+<body>
+  <main>
+    <div class="editor">
+      <a href="#" class="back-button" id="backButton">BACK</a>
+      <button class="update-button" id="updateBtn">UPDATE</button>
+      <p class="info-text">Krost, Anonymous blog service</p>
+      <br>
+
+      <div class="error-message" id="errorMessage"></div>
+      <div class="success-message" id="successMessage"></div>
+      <div class="loading-message" id="loadingMessage">Loading article...</div>
+
+      <div class="article-url" id="articleUrl">krost.one/<strong id="articleId">...</strong></div>
+
+      <input type="text" class="title-input" id="titleInput" placeholder="Title" autocomplete="off" />
+      <input type="text" class="name-input" id="nameInput" placeholder="Your name" autocomplete="off" />
+      <textarea class="content-input" id="contentInput" placeholder="Your story..."></textarea>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
+</body>
+</html> 
