@@ -1,0 +1,17 @@
+[project]
+name = "krost"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "flask>=3.1.1",
+    "pony>=0.7.19",
+    "psycopg2-binary",
+    "pydantic-settings>=2.10.1",
+    "webauthn>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+]
