@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, redirect, url_for
+from flask import Blueprint, request, jsonify, session, Request
 import os
 import base64
 import jwt
@@ -35,21 +35,24 @@ app = Blueprint("challenge", __name__)
 challenge_cache = {}
 
 
+class AuthenticatedUserRequest(Request):
+    user_id: str
+    username: str
+
+
 def generate_jwt_token(user_id: str, username: str) -> str:
-    """JWT 토큰을 생성합니다."""
     payload = {
-        'user_id': user_id,
-        'username': username,
-        'exp': datetime.utcnow() + timedelta(hours=24),  # 24시간 만료
-        'iat': datetime.utcnow()
+        "user_id": user_id,
+        "username": username,
+        "exp": datetime.now() + timedelta(hours=24),
+        "iat": datetime.now(),
     }
-    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
 
 def verify_jwt_token(token: str) -> dict:
-    """JWT 토큰을 검증합니다."""
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         raise Exception("Token has expired")
@@ -79,29 +82,30 @@ def base64url_to_bytes_fix(data: str) -> bytes:
 def token_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        token = request.headers.get('Authorization')
+        token = request.headers.get("Authorization")
         if not token:
             return {"error": "Token is missing"}, 401
         try:
             payload = verify_jwt_token(token)
-            request.user_id = payload['user_id']
-            request.username = payload['username']
+            request.user_id = payload["user_id"]
+            request.username = payload["username"]
         except Exception as e:
             return {"error": f"Invalid token: {str(e)}"}, 401
         return f(*args, **kwargs)
+
     return decorated_function
 
 
 @app.post("/auth/token/refresh")
 @db_session
 def refresh_token():
-    token = request.headers.get('Authorization')
+    token = request.headers.get("Authorization")
     if not token:
         return {"error": "Token is missing"}, 401
 
     try:
         payload = verify_jwt_token(token)
-        user = User.get(id=payload['user_id'])
+        user = User.get(id=payload["user_id"])
         if not user:
             return {"error": "User not found"}, 404
 
@@ -111,15 +115,12 @@ def refresh_token():
         return {"error": f"Token refresh failed: {str(e)}"}, 401
 
 
-@app.post("/auth/token/verify")
+@app.post("/auth/verify")
 @token_required
 def verify_token():
     return {
         "valid": True,
-        "user": {
-            "id": request.user_id,
-            "username": request.username
-        }
+        "user": {"id": request.user_id, "username": request.username},
     }, 200
 
 
@@ -212,15 +213,12 @@ def auth_login():
         commit()
 
         token = generate_jwt_token(user.id, user.username)
-        
+
         return {
             "status": "User login successfully",
             "success": True,
             "token": token,
-            "user": {
-                "id": user.id,
-                "username": user.username
-            }
+            "user": {"id": user.id, "username": user.username},
         }, 200
 
     except Exception as e:
@@ -311,15 +309,12 @@ def auth_register():
         commit()
 
         token = generate_jwt_token(user_create.id, user_create.username)
-        
+
         return {
             "status": "User registered successfully",
             "success": True,
             "token": token,
-            "user": {
-                "id": user_create.id,
-                "username": user_create.username
-            }
+            "user": {"id": user_create.id, "username": user_create.username},
         }, 200
 
     except Exception as e:

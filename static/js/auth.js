@@ -131,7 +131,18 @@ async function checkUserExists(username) {
         if (response.ok) {
             return await response.text() === 'true';
         }
-        return false;
+        
+        // 서버에서 오류 응답이 온 경우
+        try {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to check user existence');
+        } catch (e) {
+            if (e.name === 'SyntaxError') {
+                // JSON이 아닌 경우 기본 오류 메시지
+                throw new Error('Failed to check user existence');
+            }
+            throw e;
+        }
     } catch (error) {
         console.error('Error checking user existence:', error);
         return false;
@@ -148,11 +159,13 @@ async function registerUser(username) {
             body: JSON.stringify({ username }),
         });
 
+        const responseData = await response.json();
+        
         if (!response.ok) {
-            throw new Error('Failed to get registration options');
+            throw new Error(responseData.error || 'Failed to get registration options');
         }
 
-        const options = await response.json();
+        const options = responseData;
 
         const credential = await navigator.credentials.create({
             publicKey: {
@@ -186,16 +199,16 @@ async function registerUser(username) {
             }),
         });
 
-        if (!verificationResponse.ok) {
-            throw new Error('Registration verification failed');
-        }
-
         const result = await verificationResponse.json();
+
+        if (!verificationResponse.ok) {
+            throw new Error(result.error || 'Registration verification failed');
+        }
 
         if (result.success) {
             loginSuccess(result.user || { username }, result.token);
         } else {
-            throw new Error(result.message || 'Registration failed');
+            throw new Error(result.error || result.message || 'Registration failed');
         }
 
     } catch (error) {
@@ -218,11 +231,13 @@ async function loginUser(username) {
             body: JSON.stringify({ username }),
         });
 
+        const responseData = await response.json();
+        
         if (!response.ok) {
-            throw new Error('Failed to get authentication options');
+            throw new Error(responseData.error || 'Failed to get authentication options');
         }
 
-        const options = await response.json();
+        const options = responseData;
 
         options.challenge = base64ToArrayBuffer(options.challenge);
 
@@ -250,16 +265,16 @@ async function loginUser(username) {
             body: JSON.stringify(credential.toJSON())
         });
 
-        if (!verificationResponse.ok) {
-            throw new Error('Authentication verification failed');
-        }
-
         const result = await verificationResponse.json();
+
+        if (!verificationResponse.ok) {
+            throw new Error(result.error || 'Authentication verification failed');
+        }
 
         if (result.success) {
             loginSuccess(result.user || { username }, result.token);
         } else {
-            throw new Error(result.message || 'Authentication failed');
+            throw new Error(result.error || result.message || 'Authentication failed');
         }
 
     } catch (error) {
