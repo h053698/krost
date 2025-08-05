@@ -17,7 +17,6 @@ services:
       - "8000:8000"
     environment:
       - ENV=production
-      - DATABASE_URL=postgresql://postgres:password@database:5432/krost
     depends_on:
       - database
     restart: unless-stopped
