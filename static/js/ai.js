@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('Grammar fix failed:', error);
-            alert('Failed to fix grammar. Please try again.');
+            alert('Failed to fix grammar. Please try again. (ai.hackclub.com may be down)');
             contentInput.value = originalContent;
         } finally {
             contentInput.disabled = false;
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
         } catch (error) {
             console.error('Business tone conversion failed:', error);
-            alert('Failed to convert to business tone. Please try again.');
+            alert('Failed to convert to business tone. Please try again. (ai.hackclub.com may be down)');
             contentInput.value = originalContent;
         } finally {
             contentInput.disabled = false;
