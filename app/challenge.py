@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, Request
+from flask import Blueprint, request, jsonify, session
 import os
 import base64
 import jwt
