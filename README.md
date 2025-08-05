@@ -2,7 +2,9 @@
 
 A modern, anonymous blog service with secure WebAuthn (Passkey) authentication.
 
-![DemoVideo](https://hc-cdn.hel1.your-objectstorage.com/s/v3/e1053b1892433a48467451dba5733f890550e13c_________________________________2025-08-06_________________3.59.37.mp4)
+https://github.com/user-attachments/assets/3e315cc7-9e94-4473-a393-65c89fb4cb82
+
+
 
 ``This project used AI for debugging purposes to implement passkey-based user authentication.``
 
