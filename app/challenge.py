@@ -2,18 +2,24 @@ from flask import Blueprint, request, jsonify
 import os
 import base64
 
+from webauthn.helpers.cose import COSEAlgorithmIdentifier
+
 from utils.ormconfig import User
 from pony.orm import db_session
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
+    generate_authentication_options,
+    options_to_json,
 )
 from webauthn.helpers.structs import (
     RegistrationCredential,
     AuthenticatorSelectionCriteria,
     AuthenticatorAttachment,
     AuthenticatorAttestationResponse,
+    UserVerificationRequirement,
 )
+from webauthn.helpers.options_to_json import options_to_json_dict
 from utils.env_validator import get_settings
 
 settings = get_settings()
@@ -29,8 +35,11 @@ def b64encode(b: bytes) -> str:
 def b64decode(s: str) -> bytes:
     return base64.b64decode(s)
 
+def bytes_to_base64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
 
-def base64url_to_bytes_fix(data) -> bytes:
+
+def base64url_to_bytes_fix(data: str) -> bytes:
     rem = len(data) % 4
     if rem > 0:
         data += "=" * (4 - rem)
@@ -52,9 +61,33 @@ def auth_id():
     return "true", 200
 
 
+@app.post("/auth/login/challenge")
+@db_session
+def auth_login_challenge():
+    data = request.get_json()
+    username = data.get("username")
+    if not username:
+        return {"error": "Username is required"}, 400
+
+    user = User.get(username=username)
+    if not user:
+        return {"error": "User not found"}, 404
+
+    challenge = os.urandom(16)
+    options = generate_authentication_options(
+        rp_id="localhost",
+        user_verification=UserVerificationRequirement.PREFERRED,
+        challenge=challenge,
+        allow_credentials=[],
+        timeout=60000,
+    )
+
+    return jsonify(options_to_json_dict(options=options)), 200
+
+
 @app.post("/auth/register/challenge")
 @db_session
-def auth_challenge():
+def auth_register_challenge():
     data = request.get_json()
     username = data.get("username")
     if not username:
@@ -75,42 +108,15 @@ def auth_challenge():
             authenticator_attachment=AuthenticatorAttachment.PLATFORM,
             require_resident_key=True,
         ),
+        supported_pub_key_algs=[
+            COSEAlgorithmIdentifier.ECDSA_SHA_256,
+            COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
+        ],
         exclude_credentials=[],
     )
-
     challenge_cache[options.challenge] = user_id
 
-    return_data = jsonify(
-        {
-            "challenge": b64encode(options.challenge),
-            "rp": {
-                "name": options.rp.name,
-                "id": options.rp.id,
-            },
-            "user": {
-                "id": b64encode(options.user.id),
-                "name": options.user.name,
-                "displayName": options.user.display_name,
-            },
-            "authenticatorSelection": {
-                "authenticatorAttachment": "platform",
-                "requireResidentKey": True,
-            },
-            "pubKeyCredParams": [
-                {
-                    "type": options.pub_key_cred_params[0].type,
-                    "alg": -7,
-                },
-                {
-                    "type": options.pub_key_cred_params[0].type,
-                    "alg": -257,
-                },
-            ],
-            "excludeCredentials": [],
-        }
-    )
-
-    return return_data, 200
+    return jsonify(options_to_json_dict(options=options)), 200
 
 
 @app.post("/auth/register")

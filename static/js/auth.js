@@ -23,6 +23,25 @@ document.addEventListener('click', (e) => {
     }
 });
 
+function base64urlToBase64(base64url) {
+  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+  while (base64.length % 4) {
+    base64 += '=';
+  }
+  return base64;
+}
+
+function base64ToArrayBuffer(base64url) {
+  const base64 = base64urlToBase64(base64url);
+  const binaryString = window.atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
 function showLoginForm() {
     loginForm.classList.add('show');
     signInBtn.classList.add('expanded');
@@ -208,7 +227,7 @@ async function loginUser(username) {
         const abortController = new AbortController();
 
         const credential = await navigator.credentials.get({
-            publicKey: options.publicKey,
+            publicKey: options,
             signal: abortController.signal,
             mediation: 'conditional'
         });
@@ -305,16 +324,6 @@ function arrayBufferToBase64(buffer) {
         binary += String.fromCharCode(bytes[i]);
     }
     return btoa(binary);
-}
-
-function base64ToArrayBuffer(base64) {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
 }
 
 async function checkLoginStatus() {
