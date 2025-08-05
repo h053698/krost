@@ -23,10 +23,9 @@
       <input type="text" class="name-input" id="nameInput" placeholder="Your name" autocomplete="off" />
       <textarea class="content-input" id="contentInput" placeholder="Your story..."></textarea>
     </div>
-    
-    <!-- AI 도구 버튼 -->
+
     <div class="ai-tools-container">
-        <button class="ai-tools-button" id="aiToolsBtn">+</button>
+        <button class="ai-tools-button" id="aiToolsButton">+</button>
         <div class="ai-tools-menu" id="aiToolsMenu">
             <div class="ai-tools-option" id="fixGrammarOption">
                 <span>🔧</span>
@@ -41,6 +40,6 @@
   </main>
 
   <script src="{{ url_for('static', filename='js/edit.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/ai-tools.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ai.js') }}"></script>
 </body>
 </html> 
