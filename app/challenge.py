@@ -5,6 +5,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
+from pony.orm.core import EntityMeta
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
 from utils.ormconfig import User
@@ -92,6 +93,20 @@ def token_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def get_user_by_token(token: str) -> User | None:
+    try:
+        if token.startswith("Bearer "):
+            token = token[7:]
+
+        payload = verify_jwt_token(token)
+        user = User.get(id=payload["user_id"])
+        if not user:
+            return None
+        return user
+    except Exception as e:
+        raise Exception(f"Token verification failed: {str(e)}")
 
 
 @app.post("/auth/token/refresh")
