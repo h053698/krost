@@ -1,5 +1,3 @@
-import traceback
-
 from flask import Blueprint, request, jsonify
 import os
 import base64
@@ -9,7 +7,6 @@ from pony.orm import db_session
 from webauthn import (
     generate_registration_options,
     verify_registration_response,
-    base64url_to_bytes,
 )
 from webauthn.helpers.structs import (
     RegistrationCredential,
@@ -34,7 +31,6 @@ def b64decode(s: str) -> bytes:
 
 
 def base64url_to_bytes_fix(data) -> bytes:
-    """base64url 디코딩 시 패딩 문제 해결"""
     rem = len(data) % 4
     if rem > 0:
         data += "=" * (4 - rem)
@@ -47,7 +43,6 @@ def auth_id():
     data = request.get_json()
     username = data.get("username")
 
-    # check user exist
     if not username:
         return {"error": "Username is required"}, 400
 
@@ -114,7 +109,6 @@ def auth_challenge():
             "excludeCredentials": [],
         }
     )
-    print(return_data.get_json())
 
     return return_data, 200
 
