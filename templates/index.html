@@ -32,9 +32,21 @@
           <input type="text" class="name-input" placeholder="Your name" autocomplete="off" />
           <textarea class="content-input" placeholder="Your story..."></textarea>
       </div>
+      
+      <!-- AI 도구 버튼 -->
+      <div class="ai-tools-container">
+          <button class="ai-tools-button" id="aiToolsBtn">+</button>
+          <div class="ai-tools-menu" id="aiToolsMenu">
+              <div class="ai-tools-option" id="fixGrammarOption">
+                  <span>🔧</span>
+                  <span>Fix Grammar with AI</span>
+              </div>
+          </div>
+      </div>
   </main>
 
   <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
   <script src="{{ url_for('static', filename='js/post.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ai-tools.js') }}"></script>
 </body>
 </html>
