@@ -7,23 +7,39 @@ const updatedInfo = document.getElementById('updatedInfo');
 const updatedDate = document.getElementById('updatedDate');
 const reportLink = document.getElementById('reportLink');
 
-function getArticleData() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const articleId = urlParams.get('id');
+async function getArticleData() {
+  const pathParts = window.location.pathname.split('/');
+  const articleId = pathParts[1];
   
-  if (articleId) {
-    const savedArticle = localStorage.getItem(`article_${articleId}`);
-    if (savedArticle) {
-      return JSON.parse(savedArticle);
-    }
+  if (!articleId) {
+    return null;
   }
 
-  const articles = JSON.parse(localStorage.getItem('articles') || '[]');
-  if (articles.length > 0) {
-    return articles[articles.length - 1];
+  try {
+    const response = await fetch(`http://localhost:5001/article/${articleId}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      throw new Error('Failed to fetch article');
+    }
+    
+    const article = await response.json();
+
+    return {
+      id: article.id,
+      title: article.title,
+      content: article.content,
+      authorName: article.authorName,
+      authorHandle: article.authorHandle,
+      publishDate: article.createdAt,
+      updatedDate: article.updatedAt
+    };
+  } catch (error) {
+    console.error('Error fetching article:', error);
+    return null;
   }
-  
-  return null;
 }
 
 function formatDate(dateString) {
@@ -52,13 +68,13 @@ function displayArticle(article) {
 
   articleTitle.textContent = article.title || 'Untitled';
 
-  if (article.isLoggedIn && article.verifiedUser) {
-    const displayName = article.verifiedUser.displayName;
-    const username = article.verifiedUser.username;
+  if (article.authorHandle) {
+    const displayName = article.authorName;
+    const username = article.authorHandle;
     authorName.innerHTML = `${displayName} <span style="color: #777; font-weight: normal;">(@${username})</span>`;
     authorName.className = 'logged-in-author';
   } else {
-    const author = article.author || 'Anonymous';
+    const author = article.authorName || 'Anonymous';
     if (author === 'Anonymous') {
       authorName.textContent = 'Anonymous';
       authorName.className = 'anonymous-author';
@@ -83,8 +99,15 @@ function displayArticle(article) {
 }
 
 function checkEditPermission(article) {
-  editButton.classList.add('show');
-  editButton.href = `/edit.html?id=${article.id}`;
+  const authToken = localStorage.getItem('authToken');
+  const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+  if (authToken && currentUser && currentUser.username === article.authorHandle) {
+    editButton.classList.add('show');
+    editButton.href = `/${article.id}/edit`;
+  } else {
+    editButton.classList.remove('show');
+  }
 }
 
 function handleReport() {
@@ -111,14 +134,14 @@ function handleReport() {
 }
 
 function getArticleId() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('id');
+  const pathParts = window.location.pathname.split('/');
+  return pathParts[1];
 }
 
 reportLink.addEventListener('click', handleReport);
 
-function init() {
-  const article = getArticleData();
+async function init() {
+  const article = await getArticleData();
   displayArticle(article);
 }
 

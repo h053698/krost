@@ -28,7 +28,7 @@ def get_article(article_id: str):
             "authorName": article.author_name,
             "authorHandle": article.author.username if article.author else None,
             "createdAt": article.created_at.isoformat(),
-            "updatedAt": article.updated_at.isoformat(),
+            "updatedAt": article.updated_at.isoformat() if article.updated_at else None,
         }
     )
 
@@ -47,7 +47,7 @@ def create_article():
             user = get_user_by_token(auth_header)
         except Exception as _:
             pass
-    
+
     created_article = Article(
         id=os.urandom(16).hex(),
         title=data["title"],
