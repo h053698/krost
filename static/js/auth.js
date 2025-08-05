@@ -101,7 +101,7 @@ async function handlePasskeyLogin() {
 
 async function checkUserExists(username) {
     try {
-        const response = await fetch(`https://localhost:9045/auth/id`, {
+        const response = await fetch(`http://localhost:5001/auth/id`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -121,7 +121,7 @@ async function checkUserExists(username) {
 
 async function registerUser(username) {
     try {
-        const response = await fetch(`https://localhost/auth/challenge`, {
+        const response = await fetch(`http://localhost:5001/auth/challenge`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -137,28 +137,23 @@ async function registerUser(username) {
 
         const credential = await navigator.credentials.create({
             publicKey: {
-                challenge: base64ToArrayBuffer(options.publicKey.challenge),
-                rp: options.publicKey.rp,
+                ...options,
+                challenge: base64ToArrayBuffer(options.challenge),
                 user: {
-                    id: base64ToArrayBuffer(options.publicKey.user.id),
-                    name: username,
-                    displayName: username
+                    ...options.user,
+                    id: base64ToArrayBuffer(options.user.id),
                 },
-                pubKeyCredParams: options.publicKey.pubKeyCredParams,
-                authenticatorSelection: options.publicKey.authenticatorSelection,
-                timeout: options.publicKey.timeout,
-                attestation: options.publicKey.attestation || 'direct',
             }
         });
 
-        const verificationResponse = await fetch(`https://localhost/auth/register`, {
+        const verificationResponse = await fetch(`http://localhost:5001/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 username,
-                challenge: options.publicKey.challenge,
+                challenge: options.challenge,
                 credential: {
                     id: credential.id,
                     type: credential.type,
@@ -196,7 +191,7 @@ async function registerUser(username) {
 async function authenticateUser(username) {
     try {
         // Get authentication options from server
-        const response = await fetch(`https://localhost:9045/auth/authenticate-options`, {
+        const response = await fetch(`http://localhost:5001/auth/authenticate-options`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -216,7 +211,7 @@ async function authenticateUser(username) {
         });
 
         // Send credential to server for verification
-        const verificationResponse = await fetch(`https://localhost:9045/auth/authenticate`, {
+        const verificationResponse = await fetch(`http://localhost:5001/auth/authenticate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -277,7 +272,7 @@ async function handleLogout() {
         // Call server logout endpoint
         const token = localStorage.getItem('authToken');
         if (token) {
-            await fetch(`https://localhost:9045/auth/logout`, {
+            await fetch(`http://localhost:5001/auth/logout`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -311,7 +306,7 @@ function arrayBufferToBase64(buffer) {
 }
 
 function base64ToArrayBuffer(base64) {
-    const binaryString = window.atob(base64);
+    const binaryString = atob(base64);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
     for (let i = 0; i < len; i++) {
@@ -327,7 +322,7 @@ async function checkLoginStatus() {
     if (savedUser && token) {
         try {
             // Verify token with server
-            const response = await fetch(`https://localhost:9045/auth/verify`, {
+            const response = await fetch(`http://localhost:5001/auth/verify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

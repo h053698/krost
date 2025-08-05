@@ -24,11 +24,27 @@ challenge_cache = {}
 
 
 def b64encode(b: bytes) -> str:
-    return base64.urlsafe_b64encode(b).rstrip(b"=").decode("utf-8")
+    return base64.b64encode(b).decode("utf-8")
 
 
 def b64decode(s: str) -> bytes:
-    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+    return base64.b64decode(s + "=" * (-len(s) % 4))
+
+
+@app.post("/auth/id")
+@db_session
+def auth_id():
+    data = request.get_json()
+    username = data.get("username")
+
+    # check user exist
+    if not username:
+        return {"error": "Username is required"}, 400
+
+    if not User.exists(username=username):
+        return "false", 200
+
+    return "true", 200
 
 
 @app.post("/auth/challenge")
@@ -43,27 +59,53 @@ def auth_challenge():
         return {"error": "Username already exists"}, 400
 
     user_id = os.urandom(16)
+    challenge = os.urandom(32)
 
     options = generate_registration_options(
         rp_name="Krost",
-        rp_id=settings.HOSTNAME,
+        rp_id="localhost",
         user_id=user_id,
         user_name=username,
         user_display_name=username,
         authenticator_selection=AuthenticatorSelectionCriteria(
             authenticator_attachment=AuthenticatorAttachment.PLATFORM,
-            user_verification=UserVerificationRequirement.REQUIRED,
+            require_resident_key=True,
         ),
-        supported_pub_key_algs=[
-            COSEAlgorithmIdentifier.ECDSA_SHA_256,
-            COSEAlgorithmIdentifier.RSASSA_PKCS1_v1_5_SHA_256,
-        ],
-        attestation=AttestationConveyancePreference.DIRECT,
+        exclude_credentials=[],
     )
 
     challenge_cache[options.challenge] = user_id
 
-    return jsonify(options), 200
+    return_data = jsonify({
+        "challenge": b64encode(options.challenge),
+        "rp": {
+            "name": options.rp.name,
+            "id": options.rp.id,
+        },
+        "user": {
+            "id": b64encode(options.user.id),
+            "name": options.user.name,
+            "displayName": options.user.display_name,
+        },
+        "authenticatorSelection": {
+            "authenticatorAttachment": "platform",
+            "requireResidentKey": True,
+        },
+        "pubKeyCredParams": [
+            {
+                "type": options.pub_key_cred_params[0].type,
+                "alg": options.pub_key_cred_params[0].alg.value,
+            },
+            {
+                "type": options.pub_key_cred_params[0].type,
+                "alg": options.pub_key_cred_params[1].alg.value,
+            }
+        ],
+        "excludeCredentials": [],
+    })
+    print(return_data)
+
+    return return_data, 200
 
 
 @app.post("/auth/register")
@@ -101,9 +143,10 @@ def auth_register():
 
         verification = verify_registration_response(
             credential=registration_credential,
-            expected_rp_id=settings.HOSTNAME,
-            expected_origin=settings.ORIGIN,
+            expected_rp_id="localhost",
+            expected_origin="http://localhost:5001",
             expected_challenge=challenge,
+            require_user_verification=False,
         )
 
         _user_create = User(
