@@ -40,13 +40,20 @@ def create_article():
     if not data or "title" not in data or "content" not in data:
         return jsonify({"error": "Title and content are required"}), 400
 
-    user = get_user_by_token(request.headers.get("Authorization"))
+    user = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        try:
+            user = get_user_by_token(auth_header)
+        except Exception as _:
+            pass
+    
     created_article = Article(
         id=os.urandom(16).hex(),
         title=data["title"],
         content=data["content"],
         author=user,
-        author_name=user.username,
+        author_name=data["authorName"],
     )
     commit()
     return (
@@ -54,12 +61,7 @@ def create_article():
             {
                 "message": "Article created successfully",
                 "success": True,
-                "article": {
-                    "id": created_article.id,
-                    "title": data["title"],
-                    "content": data["content"],
-                    "author": user.username,
-                },
+                "articleId": created_article.id,
             }
         ),
         201,

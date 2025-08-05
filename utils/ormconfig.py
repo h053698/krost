@@ -32,7 +32,7 @@ class Article(database.Entity):
     author = Optional(User)
     author_name = Required(str)
     created_at = Required(datetime, default=datetime.now)
-    updated_at = Required(datetime, default=datetime.now)
+    updated_at = Optional(datetime)
 
 
 database.generate_mapping(create_tables=True)
