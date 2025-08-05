@@ -104,7 +104,6 @@ async function handlePasskeyLogin() {
     sendBtn.style.animation = 'spin 1s linear infinite';
 
     try {
-        // Check if user exists on server
         const userExists = await checkUserExists(username);
         
         if (userExists) {
@@ -275,7 +274,6 @@ function loginSuccess(user, token) {
     isLoggedIn = true;
     currentUser = user;
 
-    // user 객체에서 username을 추출하거나 직접 사용
     const username = user.username || user;
     
     localStorage.setItem('currentUser', JSON.stringify(user));
@@ -352,7 +350,6 @@ async function checkLoginStatus() {
     }
 }
 
-// Export functions for use in other files
 window.auth = {
     isLoggedIn: () => isLoggedIn,
     currentUser: () => currentUser,

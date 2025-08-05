@@ -144,7 +144,6 @@ async function handleUpdate() {
       'Content-Type': 'application/json',
     };
 
-    // Add authorization header
     const token = localStorage.getItem('authToken');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;

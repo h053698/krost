@@ -5,7 +5,6 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from functools import wraps
 
-from pony.orm.core import EntityMeta
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
 from utils.ormconfig import User

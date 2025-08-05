@@ -1,6 +1,6 @@
 import os
 
-from flask import Blueprint, request, jsonify, session, Request
+from flask import Blueprint, request, jsonify
 
 from utils.env_validator import get_settings
 from app.challenge import token_required, get_user_by_token

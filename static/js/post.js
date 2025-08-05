@@ -40,7 +40,6 @@ async function handlePublish() {
             'Content-Type': 'application/json',
         };
 
-        // Add authorization header if user is logged in
         if (window.auth.isLoggedIn()) {
             const token = window.auth.getToken();
             if (token) {
