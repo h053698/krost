@@ -153,6 +153,7 @@ async function registerUser(username) {
             },
             body: JSON.stringify({
                 username,
+                userId: options.user.id,
                 challenge: options.challenge,
                 credential: {
                     id: credential.id,

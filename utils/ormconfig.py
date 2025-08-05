@@ -18,8 +18,8 @@ database.bind(
 class User(database.Entity):
     id = PrimaryKey(str)
     username = Required(str, unique=True)
-    credential_id = Optional(str)
-    public_key = Optional(str)
+    credential_id = Optional(bytes)
+    public_key = Optional(bytes)
     sign_count = Optional(int, default=0)
 
 
