@@ -31,4 +31,6 @@ COPY --from=builder /usr/local /usr/local
 
 COPY . .
 
+EXPOSE 8000
+
 CMD ["uv", "run", "gunicorn", "main:app", "--bind", "0.0.0.0:8000", "--workers=4"]
