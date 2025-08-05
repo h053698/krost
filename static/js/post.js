@@ -1,3 +1,7 @@
+function getApiBaseUrl() {
+    return window.location.origin;
+}
+
 const publishBtn = document.getElementById('publishBtn');
 const titleInput = document.querySelector('.title-input');
 const nameInput = document.querySelector('.name-input');
@@ -44,7 +48,7 @@ async function handlePublish() {
             }
         }
 
-        const response = await fetch(`http://localhost:5001/article`, {
+        const response = await fetch(`${getApiBaseUrl()}/article`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(article),

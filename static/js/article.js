@@ -1,3 +1,7 @@
+function getApiBaseUrl() {
+    return window.location.origin;
+}
+
 const articleTitle = document.getElementById('articleTitle');
 const authorName = document.getElementById('authorName');
 const publishDate = document.getElementById('publishDate');
@@ -16,7 +20,7 @@ async function getArticleData() {
   }
 
   try {
-    const response = await fetch(`http://localhost:5001/article/${articleId}`);
+    const response = await fetch(`${getApiBaseUrl()}/article/${articleId}`);
     
     if (!response.ok) {
       if (response.status === 404) {

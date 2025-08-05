@@ -13,6 +13,16 @@ app.secret_key = settings.SESSION_KEY
 app.register_blueprint(challenge_app)
 app.register_blueprint(article_app)
 
+with db_session:
+    article = Article.get(id="404")
+    if not article:
+        article = Article(
+            id="404",
+            title="Page Not Found",
+            content="The page you are looking for does not exist.",
+            author_name="System",
+        )
+
 
 @app.route("/")
 def editor():
@@ -35,14 +45,4 @@ def not_found(_error):
 
 
 if __name__ == "__main__":
-    with db_session:
-        article = Article.get(id="404")
-        if not article:
-            article = Article(
-                id="404",
-                title="Page Not Found",
-                content="The page you are looking for does not exist.",
-                author_name="System",
-            )
-
     app.run(debug=True, host="0.0.0.0", port=5001)

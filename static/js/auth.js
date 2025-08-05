@@ -1,6 +1,10 @@
 let isLoggedIn = false;
 let currentUser = null;
 
+function getApiBaseUrl() {
+    return window.location.origin;
+}
+
 const signInBtn = document.getElementById('signInBtn');
 const loginForm = document.getElementById('loginForm');
 const usernameInput = document.getElementById('usernameInput');
@@ -120,38 +124,25 @@ async function handlePasskeyLogin() {
 
 async function checkUserExists(username) {
     try {
-        const response = await fetch(`http://localhost:5001/auth/id`, {
+        const response = await fetch(`${getApiBaseUrl()}/auth/id`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ username }),
         });
-        
-        if (response.ok) {
-            return await response.text() === 'true';
-        }
-        
-        // 서버에서 오류 응답이 온 경우
-        try {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to check user existence');
-        } catch (e) {
-            if (e.name === 'SyntaxError') {
-                // JSON이 아닌 경우 기본 오류 메시지
-                throw new Error('Failed to check user existence');
-            }
-            throw e;
-        }
+
+        const data = await response.json();
+        return data.exists;
     } catch (error) {
-        console.error('Error checking user existence:', error);
+        console.error('Error checking user:', error);
         return false;
     }
 }
 
 async function registerUser(username) {
     try {
-        const response = await fetch(`http://localhost:5001/auth/register/challenge`, {
+        const response = await fetch(`${getApiBaseUrl()}/auth/register/challenge`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -159,71 +150,66 @@ async function registerUser(username) {
             body: JSON.stringify({ username }),
         });
 
-        const responseData = await response.json();
-        
         if (!response.ok) {
-            throw new Error(responseData.error || 'Failed to get registration options');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Registration failed');
         }
 
-        const options = responseData;
+        const options = await response.json();
 
         const credential = await navigator.credentials.create({
             publicKey: {
-                ...options,
                 challenge: base64ToArrayBuffer(options.challenge),
-                user: {
-                    ...options.user,
-                    id: base64ToArrayBuffer(options.user.id),
+                rp: {
+                    name: options.rp.name,
+                    id: options.rp.id,
                 },
-            }
+                user: {
+                    id: base64ToArrayBuffer(options.user.id),
+                    name: options.user.name,
+                    displayName: options.user.displayName,
+                },
+                pubKeyCredParams: options.pubKeyCredParams,
+                authenticatorSelection: options.authenticatorSelection,
+                attestation: options.attestation,
+            },
         });
 
-        const verificationResponse = await fetch(`http://localhost:5001/auth/register`, {
+        const verificationResponse = await fetch(`${getApiBaseUrl()}/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                username,
-                userId: options.user.id,
-                challenge: options.challenge,
+                username: username,
                 credential: {
                     id: credential.id,
                     type: credential.type,
                     rawId: arrayBufferToBase64(credential.rawId),
                     response: {
-                        attestationObject: arrayBufferToBase64(credential.response.attestationObject),
                         clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
-                    }
-                }
+                        attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+                    },
+                },
             }),
         });
 
-        const result = await verificationResponse.json();
-
         if (!verificationResponse.ok) {
-            throw new Error(result.error || 'Registration verification failed');
+            const errorData = await verificationResponse.json();
+            throw new Error(errorData.error || 'Registration verification failed');
         }
 
-        if (result.success) {
-            loginSuccess(result.user || { username }, result.token);
-        } else {
-            throw new Error(result.error || result.message || 'Registration failed');
-        }
-
+        const result = await verificationResponse.json();
+        return result;
     } catch (error) {
-        if (error.name === 'NotAllowedError') {
-            showError('Passkey registration was cancelled');
-        } else {
-            console.error('Registration error:', error);
-            showError(error.message || 'Registration failed');
-        }
+        console.error('Registration error:', error);
+        throw error;
     }
 }
 
 async function loginUser(username) {
     try {
-        const response = await fetch(`http://localhost:5001/auth/login/challenge`, {
+        const response = await fetch(`${getApiBaseUrl()}/auth/login/challenge`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -231,59 +217,57 @@ async function loginUser(username) {
             body: JSON.stringify({ username }),
         });
 
-        const responseData = await response.json();
-        
         if (!response.ok) {
-            throw new Error(responseData.error || 'Failed to get authentication options');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Login failed');
         }
 
-        const options = responseData;
-
-        options.challenge = base64ToArrayBuffer(options.challenge);
-
-        if (options.allowCredentials) {
-          options.allowCredentials = options.allowCredentials.map(cred => {
-            return {
-              ...cred,
-              id: base64ToArrayBuffer(cred.id)
-            };
-          });
-        }
-
-        const abortController = new AbortController();
+        const options = await response.json();
 
         const credential = await navigator.credentials.get({
-          publicKey: options,
-          signal: abortController.signal,
+            publicKey: {
+                challenge: base64ToArrayBuffer(options.challenge),
+                rpId: options.rpId,
+                allowCredentials: options.allowCredentials.map(cred => ({
+                    id: base64ToArrayBuffer(cred.id),
+                    type: cred.type,
+                    transports: cred.transports,
+                })),
+                userVerification: options.userVerification,
+            },
         });
 
-        const verificationResponse = await fetch(`http://localhost:5001/auth/login`, {
+        const verificationResponse = await fetch(`${getApiBaseUrl()}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(credential.toJSON())
+            body: JSON.stringify({
+                username: username,
+                credential: {
+                    id: credential.id,
+                    type: credential.type,
+                    rawId: arrayBufferToBase64(credential.rawId),
+                    response: {
+                        clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
+                        authenticatorData: arrayBufferToBase64(credential.response.authenticatorData),
+                        signature: arrayBufferToBase64(credential.response.signature),
+                        userHandle: credential.response.userHandle ? arrayBufferToBase64(credential.response.userHandle) : null,
+                    },
+                },
+            }),
         });
 
-        const result = await verificationResponse.json();
-
         if (!verificationResponse.ok) {
-            throw new Error(result.error || 'Authentication verification failed');
+            const errorData = await verificationResponse.json();
+            throw new Error(errorData.error || 'Login verification failed');
         }
 
-        if (result.success) {
-            loginSuccess(result.user || { username }, result.token);
-        } else {
-            throw new Error(result.error || result.message || 'Authentication failed');
-        }
-
+        const result = await verificationResponse.json();
+        return result;
     } catch (error) {
-        if (error.name === 'NotAllowedError') {
-            showError('Authentication was cancelled');
-        } else {
-            console.error('Authentication error:', error);
-            showError(error.message || 'Authentication failed');
-        }
+        console.error('Login error:', error);
+        throw error;
     }
 }
 
@@ -306,31 +290,24 @@ function loginSuccess(user, token) {
 
 async function handleLogout() {
     try {
-        // Call server logout endpoint
-        const token = localStorage.getItem('authToken');
-        if (token) {
-            await fetch(`http://localhost:5001/auth/logout`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-            });
-        }
+        await fetch(`${getApiBaseUrl()}/auth/logout`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
     } catch (error) {
         console.error('Logout error:', error);
     }
 
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
     isLoggedIn = false;
     currentUser = null;
 
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('authToken');
-
+    hideLoginForm();
     loginSection.style.display = 'block';
     userInfo.style.display = 'none';
-
-    hideLoginForm();
 }
 
 function arrayBufferToBase64(buffer) {
@@ -343,33 +320,35 @@ function arrayBufferToBase64(buffer) {
 }
 
 async function checkLoginStatus() {
-    const savedUserData = localStorage.getItem('currentUser');
     const token = localStorage.getItem('authToken');
-    
-    if (savedUserData && token) {
-        try {
-            // Verify token with server
-            const response = await fetch(`http://localhost:5001/auth/verify`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-            });
+    if (!token) {
+        return false;
+    }
 
-            if (response.ok) {
-                const user = JSON.parse(savedUserData);
-                loginSuccess(user, token);
-            } else {
-                // Token is invalid, clear storage
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('authToken');
-            }
-        } catch (error) {
-            console.error('Token verification error:', error);
-            localStorage.removeItem('currentUser');
+    try {
+        const response = await fetch(`${getApiBaseUrl()}/auth/verify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        if (response.ok) {
+            const userData = await response.json();
+            currentUser = userData.user;
+            isLoggedIn = true;
+            return true;
+        } else {
             localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            return false;
         }
+    } catch (error) {
+        console.error('Error checking login status:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        return false;
     }
 }
 

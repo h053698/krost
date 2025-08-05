@@ -1,3 +1,7 @@
+function getApiBaseUrl() {
+    return window.location.origin;
+}
+
 let currentArticle = null;
 
 const backButton = document.getElementById('backButton');
@@ -68,7 +72,7 @@ async function loadArticle() {
   showLoading('Loading article...');
 
   try {
-    const response = await fetch(`http://localhost:5001/article/${articleId}`);
+    const response = await fetch(`${getApiBaseUrl()}/article/${articleId}`);
     
     if (!response.ok) {
       if (response.status === 404) {
@@ -131,34 +135,34 @@ async function handleUpdate() {
   setLoading(true);
 
   try {
+    const article = {
+      title: title,
+      content: content,
+    };
+
+    const headers = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add authorization header
     const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('Authentication required');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`http://localhost:5001/article/${currentArticle.id}`, {
+    const response = await fetch(`${getApiBaseUrl()}/article/${currentArticle.id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        title: title,
-        content: content
-      })
+      headers: headers,
+      body: JSON.stringify(article),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to update article');
+      throw new Error(errorData.message || 'Failed to update article');
     }
 
     const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to update article');
-    }
-
+    
     showSuccess('Article updated successfully!');
 
     setTimeout(() => {
@@ -166,7 +170,7 @@ async function handleUpdate() {
     }, 1500);
 
   } catch (error) {
-    console.error('Error updating article:', error);
+    console.error('Update error:', error);
     showError(error.message || 'Failed to update article');
   } finally {
     setLoading(false);
