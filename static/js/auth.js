@@ -121,7 +121,7 @@ async function checkUserExists(username) {
 
 async function registerUser(username) {
     try {
-        const response = await fetch(`http://localhost:5001/auth/challenge`, {
+        const response = await fetch(`http://localhost:5001/auth/register/challenge`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -52,7 +52,7 @@ def auth_id():
     return "true", 200
 
 
-@app.post("/auth/challenge")
+@app.post("/auth/register/challenge")
 @db_session
 def auth_challenge():
     data = request.get_json()
