@@ -1,55 +1,55 @@
 <!DOCTYPE html>
 <html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>Write a Post</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
-</head>
-<body>
-  <main>
-      <div class="editor">
-          <button class="publish-button interactable-button" id="publishBtn">PUBLISH</button>
-          <p class="info-text">Krost, Anonymous blog service</p>
-          <br>
-
-          <div id="loginSection">
-              <p class="login-recommend-text" id="signInBtn">🔐 Sign In with Passkey</p>
-              <div class="login-form" id="loginForm">
+   <head>
+      <meta charset="UTF-8">
+      <title>Write a Post</title>
+      <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+      <meta property="og:title" content="Krost" />
+      <meta property="og:description" content="Anonymous blog service" />
+      <meta property="og:type" content="website" />
+      <meta name="twitter:title" content="Krost" />
+      <meta name="twitter:description" content="Anonymous blog service" />
+   </head>
+   <body>
+      <main>
+         <div class="editor">
+            <button class="publish-button interactable-button" id="publishBtn">PUBLISH</button>
+            <p class="info-text">Krost, Anonymous blog service</p>
+            <br>
+            <div id="loginSection">
+               <p class="login-recommend-text" id="signInBtn">🔐 Sign In with Passkey</p>
+               <div class="login-form" id="loginForm">
                   <div class="username-container">
-                      <input type="text" class="username-input" id="usernameInput" placeholder="Enter username" autocomplete="username webauthn" autofocus />
-                      <span class="send-button" id="sendBtn">↵</span>
+                     <input type="text" class="username-input" id="usernameInput" placeholder="Enter username" autocomplete="username webauthn" autofocus />
+                     <span class="send-button" id="sendBtn">↵</span>
                   </div>
                   <div class="error-message" id="errorMessage"></div>
-              </div>
-          </div>
-
-          <div class="user-info" id="userInfo" style="display: none;">
-              <span id="welcomeMessage"></span>
-              <button class="logout-button" id="logoutBtn">Logout</button>
-          </div>
-
-          <input type="text" class="title-input" placeholder="Title" autocomplete="off" />
-          <input type="text" class="name-input" placeholder="Your name" autocomplete="off" />
-          <textarea class="content-input" placeholder="Your story..."></textarea>
-      </div>
-
-      <div class="ai-tools-container">
-          <button class="ai-tools-button" id="aiToolsButton">+</button>
-          <div class="ai-tools-menu" id="aiToolsMenu">
-              <div class="ai-tools-option" id="fixGrammarOption">
+               </div>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+               <span id="welcomeMessage"></span>
+               <button class="logout-button" id="logoutBtn">Logout</button>
+            </div>
+            <input type="text" class="title-input" placeholder="Title" autocomplete="off" />
+            <input type="text" class="name-input" placeholder="Your name" autocomplete="off" />
+            <textarea class="content-input" placeholder="Your story..."></textarea>
+         </div>
+         <div class="ai-tools-container">
+            <button class="ai-tools-button" id="aiToolsButton">+</button>
+            <div class="ai-tools-menu" id="aiToolsMenu">
+               <div class="ai-tools-option" id="fixGrammarOption">
                   <span>🔧</span>
                   <span>Fix Grammar with AI</span>
-              </div>
-              <div class="ai-tools-option" id="businessToneOption">
+               </div>
+               <div class="ai-tools-option" id="businessToneOption">
                   <span>💼</span>
                   <span>Convert to Business Tone</span>
-              </div>
-          </div>
-      </div>
-  </main>
-
-  <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/post.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/ai.js') }}"></script>
-</body>
+               </div>
+            </div>
+         </div>
+      </main>
+      <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/post.js') }}"></script>
+      <script src="{{ url_for('static', filename='js/ai.js') }}"></script>
+   </body>
 </html>
