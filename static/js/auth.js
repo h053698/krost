@@ -181,6 +181,8 @@ async function registerUser(username) {
             },
             body: JSON.stringify({
                 username: username,
+                userId: options.user.id,
+                challenge: options.challenge,
                 credential: {
                     id: credential.id,
                     type: credential.type,
@@ -199,6 +201,11 @@ async function registerUser(username) {
         }
 
         const result = await verificationResponse.json();
+        if (result.success) {
+            loginSuccess(username, result.token);
+        } else {
+            throw new Error(result.message || 'Registration failed');
+        }
         return result;
     } catch (error) {
         console.error('Registration error:', error);
@@ -222,18 +229,11 @@ async function loginUser(username) {
         }
 
         const options = await response.json();
+        const abortController = new AbortController();
 
         const credential = await navigator.credentials.get({
-            publicKey: {
-                challenge: base64ToArrayBuffer(options.challenge),
-                rpId: options.rpId,
-                allowCredentials: options.allowCredentials.map(cred => ({
-                    id: base64ToArrayBuffer(cred.id),
-                    type: cred.type,
-                    transports: cred.transports,
-                })),
-                userVerification: options.userVerification,
-            },
+            publicKey: options,
+            signal: abortController.signal,
         });
 
         const verificationResponse = await fetch(`${getApiBaseUrl()}/auth/login`, {
@@ -263,6 +263,13 @@ async function loginUser(username) {
         }
 
         const result = await verificationResponse.json();
+
+        if (result.success) {
+            loginSuccess(username, result.token);
+        } else {
+            throw new Error(result.message || 'Authentication failed');
+        }
+
         return result;
     } catch (error) {
         console.error('Login error:', error);
@@ -288,10 +295,12 @@ function loginSuccess(user, token) {
 
 async function handleLogout() {
     try {
+        const token = localStorage.getItem('authToken');
         await fetch(`${getApiBaseUrl()}/auth/logout`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
         });
     } catch (error) {
