@@ -13,6 +13,26 @@ settings = get_settings()
 app = Blueprint("article", __name__)
 
 
+@app.route("/article/<str:article_id>", methods=["GET"])
+@db_session
+def get_article(article_id: str):
+    article = Article.get(id=article_id)
+    if not article:
+        return jsonify({"error": "Article not found"}), 404
+
+    return jsonify(
+        {
+            "id": article.id,
+            "title": article.title,
+            "content": article.content,
+            "authorName": article.author_name,
+            "authorHandle": article.author.username if article.author else None,
+            "createdAt": article.created_at.isoformat(),
+            "updatedAt": article.updated_at.isoformat(),
+        }
+    )
+
+
 @app.route("/article", methods=["POST"])
 @db_session
 def create_article():
