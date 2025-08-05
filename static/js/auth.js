@@ -85,7 +85,7 @@ async function handlePasskeyLogin() {
         const userExists = await checkUserExists(username);
         
         if (userExists) {
-            await authenticateUser(username);
+            await loginUser(username);
         } else {
             await registerUser(username);
         }
@@ -189,10 +189,9 @@ async function registerUser(username) {
     }
 }
 
-async function authenticateUser(username) {
+async function loginUser(username) {
     try {
-        // Get authentication options from server
-        const response = await fetch(`http://localhost:5001/auth/authenticate-options`, {
+        const response = await fetch(`http://localhost:5001/auth/login/challenge`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -206,13 +205,15 @@ async function authenticateUser(username) {
 
         const options = await response.json();
 
-        // Get credential with server options
+        const abortController = new AbortController();
+
         const credential = await navigator.credentials.get({
-            publicKey: options.publicKey
+            publicKey: options.publicKey,
+            signal: abortController.signal,
+            mediation: 'conditional'
         });
 
-        // Send credential to server for verification
-        const verificationResponse = await fetch(`http://localhost:5001/auth/authenticate`, {
+        const verificationResponse = await fetch(`http://localhost:5001/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
