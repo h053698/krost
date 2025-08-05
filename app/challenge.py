@@ -173,6 +173,8 @@ def auth_login():
         return {"error": "Credential data is required"}, 400
 
     user = User.get(credential_id=base64url_to_bytes_fix(data["id"]))
+    if not user:
+        return {"error": "Passkey verification failed"}, 400
     if not user.credential_id == base64url_to_bytes_fix(data["id"]):
         return {"error": "Invalid credential"}, 400
 
