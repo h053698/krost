@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify, session, redirect, url_for
 import os
 import base64
+import jwt
+from datetime import datetime, timedelta
+from functools import wraps
 
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
 
@@ -32,6 +35,28 @@ app = Blueprint("challenge", __name__)
 challenge_cache = {}
 
 
+def generate_jwt_token(user_id: str, username: str) -> str:
+    """JWT 토큰을 생성합니다."""
+    payload = {
+        'user_id': user_id,
+        'username': username,
+        'exp': datetime.utcnow() + timedelta(hours=24),  # 24시간 만료
+        'iat': datetime.utcnow()
+    }
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+
+
+def verify_jwt_token(token: str) -> dict:
+    """JWT 토큰을 검증합니다."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise Exception("Token has expired")
+    except jwt.InvalidTokenError:
+        raise Exception("Invalid token")
+
+
 def b64encode(b: bytes) -> str:
     return base64.b64encode(b).decode("utf-8")
 
@@ -49,6 +74,53 @@ def base64url_to_bytes_fix(data: str) -> bytes:
     if rem > 0:
         data += "=" * (4 - rem)
     return base64.urlsafe_b64decode(data)
+
+
+def token_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return {"error": "Token is missing"}, 401
+        try:
+            payload = verify_jwt_token(token)
+            request.user_id = payload['user_id']
+            request.username = payload['username']
+        except Exception as e:
+            return {"error": f"Invalid token: {str(e)}"}, 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.post("/auth/token/refresh")
+@db_session
+def refresh_token():
+    token = request.headers.get('Authorization')
+    if not token:
+        return {"error": "Token is missing"}, 401
+
+    try:
+        payload = verify_jwt_token(token)
+        user = User.get(id=payload['user_id'])
+        if not user:
+            return {"error": "User not found"}, 404
+
+        new_token = generate_jwt_token(user.id, user.username)
+        return {"token": new_token}, 200
+    except Exception as e:
+        return {"error": f"Token refresh failed: {str(e)}"}, 401
+
+
+@app.post("/auth/token/verify")
+@token_required
+def verify_token():
+    return {
+        "valid": True,
+        "user": {
+            "id": request.user_id,
+            "username": request.username
+        }
+    }, 200
 
 
 @app.post("/auth/id")
@@ -137,7 +209,17 @@ def auth_login():
         user.sign_count = verification.new_sign_count
         commit()
 
-        return {"status": "User login successfully"}, 200
+        token = generate_jwt_token(user.id, user.username)
+        
+        return {
+            "status": "User login successfully",
+            "success": True,
+            "token": token,
+            "user": {
+                "id": user.id,
+                "username": user.username
+            }
+        }, 200
 
     except Exception as e:
         return {"error": f"Authentication verification failed: {str(e)}"}, 400
@@ -217,15 +299,26 @@ def auth_register():
             require_user_verification=True,
         )
 
-        _user_create = User(
+        user_create = User(
             id=data.get("userId"),
             username=username,
             credential_id=verification.credential_id,
             public_key=verification.credential_public_key,
             sign_count=verification.sign_count,
         )
+        commit()
 
-        return {"status": "User registered successfully"}, 200
+        token = generate_jwt_token(user_create.id, user_create.username)
+        
+        return {
+            "status": "User registered successfully",
+            "success": True,
+            "token": token,
+            "user": {
+                "id": user_create.id,
+                "username": user_create.username
+            }
+        }, 200
 
     except Exception as e:
         return {"error": f"Registration verification failed: {str(e)}"}, 400

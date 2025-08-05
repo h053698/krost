@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ORIGIN: str = "http://localhost:5001"
     HOSTNAME: str = "localhost"
     SESSION_KEY: str = "krost_session_secret_key_1234567890"
+    SECRET_KEY: str = "krost_jwt_secret_key_1234567890"
 
 
 settings = Settings()

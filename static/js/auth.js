@@ -192,8 +192,9 @@ async function registerUser(username) {
 
         const result = await verificationResponse.json();
         
-        if (result.success) {
-            loginSuccess(username, result.token);
+        // 새로운 응답 구조에 맞게 수정
+        if (result.status === "User login successfully" || result.success) {
+            loginSuccess(result.user || { username }, result.token);
         } else {
             throw new Error(result.message || 'Registration failed');
         }
@@ -241,7 +242,6 @@ async function loginUser(username) {
           publicKey: options,
           signal: abortController.signal,
         });
-        console.log(credential.toJSON());
 
         const verificationResponse = await fetch(`http://localhost:5001/auth/login`, {
             method: 'POST',
@@ -257,8 +257,9 @@ async function loginUser(username) {
 
         const result = await verificationResponse.json();
         
+        // 새로운 응답 구조에 맞게 수정
         if (result.success) {
-            loginSuccess(username, result.token);
+            loginSuccess(result.user || { username }, result.token);
         } else {
             throw new Error(result.message || 'Authentication failed');
         }
@@ -273,11 +274,14 @@ async function loginUser(username) {
     }
 }
 
-function loginSuccess(username, token) {
+function loginSuccess(user, token) {
     isLoggedIn = true;
-    currentUser = username;
+    currentUser = user;
 
-    localStorage.setItem('currentUser', username);
+    // user 객체에서 username을 추출하거나 직접 사용
+    const username = user.username || user;
+    
+    localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('authToken', token);
 
     loginSection.style.display = 'none';
@@ -326,10 +330,10 @@ function arrayBufferToBase64(buffer) {
 }
 
 async function checkLoginStatus() {
-    const savedUser = localStorage.getItem('currentUser');
+    const savedUserData = localStorage.getItem('currentUser');
     const token = localStorage.getItem('authToken');
     
-    if (savedUser && token) {
+    if (savedUserData && token) {
         try {
             // Verify token with server
             const response = await fetch(`http://localhost:5001/auth/verify`, {
@@ -341,7 +345,8 @@ async function checkLoginStatus() {
             });
 
             if (response.ok) {
-                loginSuccess(savedUser, token);
+                const user = JSON.parse(savedUserData);
+                loginSuccess(user, token);
             } else {
                 // Token is invalid, clear storage
                 localStorage.removeItem('currentUser');
@@ -365,4 +370,4 @@ window.auth = {
     hideError
 };
 
-window.addEventListener('load', checkLoginStatus); 
+window.addEventListener('load', checkLoginStatus);
