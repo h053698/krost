@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, session, Request
 import os
 import base64
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 from webauthn.helpers.cose import COSEAlgorithmIdentifier
@@ -36,11 +36,12 @@ challenge_cache = {}
 
 
 def generate_jwt_token(user_id: str, username: str) -> str:
+    now = datetime.now(timezone.utc)
     payload = {
         "user_id": user_id,
         "username": username,
-        "exp": datetime.now() + timedelta(hours=24),
-        "iat": datetime.now(),
+        "exp": now + timedelta(hours=24),
+        "iat": now,
     }
     return jwt.encode(payload, settings.SECRET_KEY, algorithm="HS256")
 
@@ -51,8 +52,6 @@ def verify_jwt_token(token: str) -> dict:
         return payload
     except jwt.ExpiredSignatureError:
         raise Exception("Token has expired")
-    except jwt.InvalidTokenError:
-        raise Exception("Invalid token")
 
 
 def b64encode(b: bytes) -> str:
@@ -76,10 +75,15 @@ def base64url_to_bytes_fix(data: str) -> bytes:
 
 def token_required(f):
     @wraps(f)
+    @db_session
     def decorated_function(*args, **kwargs):
         token = request.headers.get("Authorization")
         if not token:
             return {"error": "Token is missing"}, 401
+
+        if token.startswith("Bearer "):
+            token = token[7:]
+
         try:
             payload = verify_jwt_token(token)
             kwargs["user"] = User.get(id=payload["user_id"])
