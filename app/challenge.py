@@ -10,7 +10,6 @@ from webauthn import (
     generate_registration_options,
     verify_registration_response,
     generate_authentication_options,
-    options_to_json,
 )
 from webauthn.helpers.structs import (
     RegistrationCredential,
@@ -35,8 +34,9 @@ def b64encode(b: bytes) -> str:
 def b64decode(s: str) -> bytes:
     return base64.b64decode(s)
 
+
 def bytes_to_base64url(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+    return base64.urlsafe_b64encode(data).decode("utf-8").rstrip("=")
 
 
 def base64url_to_bytes_fix(data: str) -> bytes:
