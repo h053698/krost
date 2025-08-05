@@ -1,0 +1,28 @@
+services:
+  database:
+    image: postgres:latest
+    container_name: krost-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: krost
+    volumes:
+      - krostdb:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: krost-web
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+      - DATABASE_URL=postgresql://postgres:password@database:5432/krost
+    depends_on:
+      - database
+    restart: unless-stopped
+
+volumes:
+  krostdb:
