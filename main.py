@@ -1,8 +1,12 @@
 from flask import Flask, render_template, redirect
 from utils.ormconfig import User as _
 from app.challenge import app as challenge_app
+from utils.env_validator import get_settings
+
+settings = get_settings()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
+app.secret_key = settings.SESSION_KEY
 app.register_blueprint(challenge_app)
 
 

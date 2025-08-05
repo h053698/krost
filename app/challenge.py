@@ -75,7 +75,7 @@ def auth_login_challenge():
 
     challenge = os.urandom(16)
     options = generate_authentication_options(
-        rp_id="localhost",
+        rp_id=settings.HOSTNAME,
         user_verification=UserVerificationRequirement.PREFERRED,
         challenge=challenge,
         allow_credentials=[],
@@ -100,7 +100,7 @@ def auth_register_challenge():
 
     options = generate_registration_options(
         rp_name="Krost",
-        rp_id="localhost",
+        rp_id=settings.HOSTNAME,
         user_id=user_id,
         user_name=username,
         user_display_name=username,
@@ -153,8 +153,8 @@ def auth_register():
 
         verification = verify_registration_response(
             credential=registration_credential,
-            expected_rp_id="localhost",
-            expected_origin="http://localhost:5001",
+            expected_rp_id=settings.HOSTNAME,
+            expected_origin=settings.ORIGIN,
             expected_challenge=base64url_to_bytes_fix(challenge),
             require_user_verification=True,
         )

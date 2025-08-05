@@ -13,8 +13,9 @@ class Settings(BaseSettings):
     DATABASE_PASSWORD: str = "password"
     DATABASE_NAME: str = "krost"
 
-    ORIGIN: str = "http://localhost"
+    ORIGIN: str = "http://localhost:5001"
     HOSTNAME: str = "localhost"
+    SESSION_KEY: str = "krost_session_secret_key_1234567890"
 
 
 settings = Settings()
