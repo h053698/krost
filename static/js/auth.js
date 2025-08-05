@@ -191,9 +191,8 @@ async function registerUser(username) {
         }
 
         const result = await verificationResponse.json();
-        
-        // 새로운 응답 구조에 맞게 수정
-        if (result.status === "User login successfully" || result.success) {
+
+        if (result.success) {
             loginSuccess(result.user || { username }, result.token);
         } else {
             throw new Error(result.message || 'Registration failed');
@@ -256,8 +255,7 @@ async function loginUser(username) {
         }
 
         const result = await verificationResponse.json();
-        
-        // 새로운 응답 구조에 맞게 수정
+
         if (result.success) {
             loginSuccess(result.user || { username }, result.token);
         } else {
