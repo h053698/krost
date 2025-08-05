@@ -53,11 +53,11 @@ function setLoading(isLoading) {
 }
 
 function getArticleId() {
-  const urlParams = new URLSearchParams(window.location.search);
-  return urlParams.get('id');
+  const pathParts = window.location.pathname.split('/');
+  return pathParts[1];
 }
 
-function loadArticle() {
+async function loadArticle() {
   const articleId = getArticleId();
   
   if (!articleId) {
@@ -67,19 +67,23 @@ function loadArticle() {
 
   showLoading('Loading article...');
 
-  const savedArticle = localStorage.getItem(`article_${articleId}`);
-  
-  if (!savedArticle) {
-    hideLoading();
-    showError('Article not found');
-    return;
-  }
-
   try {
-    currentArticle = JSON.parse(savedArticle);
+    const response = await fetch(`http://localhost:5001/article/${articleId}`);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        hideLoading();
+        showError('Article not found');
+        return;
+      }
+      throw new Error('Failed to load article');
+    }
+    
+    currentArticle = await response.json();
 
     titleInput.value = currentArticle.title || '';
-    nameInput.value = currentArticle.author || '';
+    nameInput.value = currentArticle.authorName || '';
+    nameInput.readOnly = true;
     contentInput.value = currentArticle.content || '';
 
     articleIdElement.textContent = currentArticle.id;
@@ -97,15 +101,14 @@ function loadArticle() {
 function handleBack() {
   const articleId = getArticleId();
   if (articleId) {
-    window.location.href = `/article.html?id=${articleId}`;
+    window.location.href = `/${articleId}`;
   } else {
     window.location.href = '/';
   }
 }
 
-function handleUpdate() {
+async function handleUpdate() {
   const title = titleInput.value.trim();
-  const author = nameInput.value.trim();
   const content = contentInput.value.trim();
 
   if (!title) {
@@ -128,40 +131,50 @@ function handleUpdate() {
   setLoading(true);
 
   try {
-    const updatedArticle = {
-      ...currentArticle,
-      title: title,
-      author: author || 'Anonymous',
-      content: content,
-      updatedDate: new Date().toISOString()
-    };
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication required');
+    }
 
-    localStorage.setItem(`article_${currentArticle.id}`, JSON.stringify(updatedArticle));
+    const response = await fetch(`http://localhost:5001/article/${currentArticle.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: title,
+        content: content
+      })
+    });
 
-    const articles = JSON.parse(localStorage.getItem('articles') || '[]');
-    const articleIndex = articles.findIndex(article => article.id === currentArticle.id);
-    
-    if (articleIndex !== -1) {
-      articles[articleIndex] = updatedArticle;
-      localStorage.setItem('articles', JSON.stringify(articles));
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update article');
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to update article');
     }
 
     showSuccess('Article updated successfully!');
 
     setTimeout(() => {
-      window.location.href = `/article.html?id=${currentArticle.id}`;
+      window.location.href = `/${currentArticle.id}`;
     }, 1500);
 
   } catch (error) {
     console.error('Error updating article:', error);
-    showError('Failed to update article');
+    showError(error.message || 'Failed to update article');
   } finally {
     setLoading(false);
   }
 }
 
-function init() {
-  loadArticle();
+async function init() {
+  await loadArticle();
 }
 
 window.addEventListener('load', init); 
