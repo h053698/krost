@@ -28,13 +28,8 @@ async function handlePublish() {
     try {
         const article = {
             title: title,
-            author: window.auth.isLoggedIn() ? window.auth.currentUser() : (author || 'Anonymous'),
+            authorName: author || 'Anonymous',
             content: content,
-            isLoggedIn: window.auth.isLoggedIn(),
-            verifiedUser: window.auth.isLoggedIn() ? {
-                username: window.auth.currentUser(),
-                displayName: nameInput.value.trim() || window.auth.currentUser()
-            } : null
         };
 
         const headers = {
@@ -49,7 +44,7 @@ async function handlePublish() {
             }
         }
 
-        const response = await fetch(`https://localhost:9045/posts`, {
+        const response = await fetch(`http://localhost:5001/article`, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(article),
