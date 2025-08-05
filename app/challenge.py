@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 import os
 import base64
 
@@ -10,6 +10,7 @@ from webauthn import (
     generate_registration_options,
     verify_registration_response,
     generate_authentication_options,
+    verify_authentication_response,
 )
 from webauthn.helpers.structs import (
     RegistrationCredential,
@@ -17,9 +18,13 @@ from webauthn.helpers.structs import (
     AuthenticatorAttachment,
     AuthenticatorAttestationResponse,
     UserVerificationRequirement,
+    AuthenticationCredential,
+    AuthenticatorAssertionResponse,
 )
 from webauthn.helpers.options_to_json import options_to_json_dict
 from utils.env_validator import get_settings
+
+from pony.orm import commit
 
 settings = get_settings()
 
@@ -73,16 +78,69 @@ def auth_login_challenge():
     if not user:
         return {"error": "User not found"}, 404
 
-    challenge = os.urandom(16)
     options = generate_authentication_options(
         rp_id=settings.HOSTNAME,
         user_verification=UserVerificationRequirement.PREFERRED,
-        challenge=challenge,
         allow_credentials=[],
         timeout=60000,
     )
+    session["challenge"] = options.challenge
 
     return jsonify(options_to_json_dict(options=options)), 200
+
+
+@app.post("/auth/login")
+@db_session
+def auth_login():
+    data = request.get_json()
+
+    expected_challenge = session.get("challenge")
+    expected_origin = request.environ.get("HTTP_ORIGIN")
+
+    if not data:
+        return {"error": "Credential data is required"}, 400
+
+    user = User.get(credential_id=base64url_to_bytes_fix(data["id"]))
+    if not user.credential_id == base64url_to_bytes_fix(data["id"]):
+        return {"error": "Invalid credential"}, 400
+
+    try:
+        credential = AuthenticationCredential(
+            id=data["id"],
+            raw_id=base64url_to_bytes_fix(data["rawId"]),
+            type=data["type"],
+            response=AuthenticatorAssertionResponse(
+                client_data_json=base64url_to_bytes_fix(
+                    data["response"]["clientDataJSON"],
+                ),
+                authenticator_data=base64url_to_bytes_fix(
+                    data["response"]["authenticatorData"],
+                ),
+                signature=base64url_to_bytes_fix(
+                    data["response"]["signature"],
+                ),
+                user_handle=base64url_to_bytes_fix(
+                    data["response"].get("userHandle", b"")
+                ),
+            ),
+            authenticator_attachment=AuthenticatorAttachment.PLATFORM,
+        )
+        verification = verify_authentication_response(
+            credential=credential,
+            expected_challenge=expected_challenge,
+            expected_rp_id=settings.HOSTNAME,
+            expected_origin=expected_origin,
+            require_user_verification=False,
+            credential_public_key=user.public_key,
+            credential_current_sign_count=user.sign_count,
+        )
+        user.sign_count = verification.new_sign_count
+        commit()
+
+        return {"status": "User login successfully"}, 200
+
+    except Exception as e:
+        return {"error": f"Authentication verification failed: {str(e)}"}, 400
 
 
 @app.post("/auth/register/challenge")

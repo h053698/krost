@@ -224,32 +224,31 @@ async function loginUser(username) {
 
         const options = await response.json();
 
+        options.challenge = base64ToArrayBuffer(options.challenge);
+
+        if (options.allowCredentials) {
+          options.allowCredentials = options.allowCredentials.map(cred => {
+            return {
+              ...cred,
+              id: base64ToArrayBuffer(cred.id)
+            };
+          });
+        }
+
         const abortController = new AbortController();
 
         const credential = await navigator.credentials.get({
-            publicKey: options,
-            signal: abortController.signal,
-            mediation: 'conditional'
+          publicKey: options,
+          signal: abortController.signal,
         });
+        console.log(credential.toJSON());
 
         const verificationResponse = await fetch(`http://localhost:5001/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                username,
-                credential: {
-                    id: credential.id,
-                    type: credential.type,
-                    rawId: arrayBufferToBase64(credential.rawId),
-                    response: {
-                        authenticatorData: arrayBufferToBase64(credential.response.authenticatorData),
-                        clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON),
-                        signature: arrayBufferToBase64(credential.response.signature),
-                    }
-                }
-            }),
+            body: JSON.stringify(credential.toJSON())
         });
 
         if (!verificationResponse.ok) {
