@@ -35,11 +35,6 @@ app = Blueprint("challenge", __name__)
 challenge_cache = {}
 
 
-class AuthenticatedUserRequest(Request):
-    user_id: str
-    username: str
-
-
 def generate_jwt_token(user_id: str, username: str) -> str:
     payload = {
         "user_id": user_id,
@@ -87,8 +82,7 @@ def token_required(f):
             return {"error": "Token is missing"}, 401
         try:
             payload = verify_jwt_token(token)
-            request.user_id = payload["user_id"]
-            request.username = payload["username"]
+            kwargs["user"] = User.get(id=payload["user_id"])
         except Exception as e:
             return {"error": f"Invalid token: {str(e)}"}, 401
         return f(*args, **kwargs)
@@ -107,7 +101,7 @@ def refresh_token():
         payload = verify_jwt_token(token)
         user = User.get(id=payload["user_id"])
         if not user:
-            return {"error": "User not found"}, 404
+            return {"error": "Authentication Error, Token is invalid"}, 400
 
         new_token = generate_jwt_token(user.id, user.username)
         return {"token": new_token}, 200
@@ -117,10 +111,10 @@ def refresh_token():
 
 @app.post("/auth/verify")
 @token_required
-def verify_token():
+def verify_token(user: User):
     return {
         "valid": True,
-        "user": {"id": request.user_id, "username": request.username},
+        "user": {"id": user.id, "username": user.username},
     }, 200
 
 
